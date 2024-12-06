@@ -14,7 +14,7 @@ export const meta: MetaFunction = () => {
 
 export default function Index() {
   const [wallets, setWallets] = useState<CardanoWallet[]>(getWallets());
-  const [selectedWallet, setSelectedWallet] = useState<CardanoWallet>();
+  const [selectedWallet, setSelectedWallet] = useState<CardanoWallet | null>(null);
   const [walletApi, setWalletApi] = useState<CardanoWalletApi>();
   const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -22,8 +22,8 @@ export default function Index() {
     setIsModalOpen((prev) => !prev);
   }, []);
 
-  const handleSelectWallet = useCallback((wallet: CardanoWallet) => {
-    setSelectedWallet(wallet);
+  const handleSelectWallet = useCallback((wallet: CardanoWallet | null) => {
+    setSelectedWallet(wallet!);
     setIsModalOpen(false);
   }, []);
 
@@ -38,8 +38,8 @@ export default function Index() {
   }, [selectedWallet]);
 
   return (
-    <div className="w-[100vw] h-[100vh] flex justify-center items-center">
-      {isModalOpen && <SelectWalletModal wallets={wallets} handleSelectWallet={handleSelectWallet} />}
+    <div className="w-[100vw] h-[100vh] flex justify-center items-center gap-2">
+      {isModalOpen && <SelectWalletModal wallets={wallets} handleSelectWallet={handleSelectWallet} selectedWallet={selectedWallet}/>}
       <div className="flex gap-4 flex-col w-[800px] h-[400px] bg-[#15191e] drop-shadow-xl rounded-lg p-5">
         <div className="flex justify-between items-center">
           <div className="w-[200px]">
