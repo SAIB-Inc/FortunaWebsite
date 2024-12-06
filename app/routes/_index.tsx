@@ -1,11 +1,12 @@
 import type { MetaFunction } from "@remix-run/node";
 import { ConvertIcon } from "~/components/convert_icon";
 import { FishIcon } from "~/components/fish_icon";
+import { getWallets } from "@saibdev/bifrost";
 
 export const meta: MetaFunction = () => {
   return [
-    { title: "New Remix App" },
-    { name: "description", content: "Welcome to Remix!" },
+    { title: "Fortuna Converter" },
+    { name: "description", content: "Convert your V1 $TUNA to V2 $TUNA" },
   ];
 };
 
