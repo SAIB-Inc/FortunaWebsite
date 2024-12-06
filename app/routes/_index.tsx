@@ -1,9 +1,12 @@
-import type { MetaFunction } from "@remix-run/node";
+import { json, type ActionFunction, type MetaFunction } from "@remix-run/node";
 import { ConvertIcon } from "~/components/convert_icon";
 import { FishIcon } from "~/components/fish_icon";
-import { CardanoWallet, CardanoWalletApi, getWallets } from "@saibdev/bifrost";
-import { useCallback, useEffect, useState } from "react";
+import { AddressHex, CardanoWallet, CardanoWalletApi, getWallets } from "@saibdev/bifrost";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { SelectWalletModal } from "~/components/select_wallet_modal";
+import { buildConvertTunaTx } from "~/tunaTx";
+import { useFetcher } from "@remix-run/react";
+
 export const meta: MetaFunction = () => {
   return [
     { title: "Fortuna Converter" },
@@ -17,6 +20,8 @@ export default function Index() {
   const [walletApi, setWalletApi] = useState<CardanoWalletApi>();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [amountInput, setAmountInput] = useState<string>('');
+  const [addressHex, setAddressHex] = useState<AddressHex>();
+  const fetcher = useFetcher();
 
   const handleOpenModal = useCallback(() => {
     if (selectedWallet) {
@@ -34,10 +39,33 @@ export default function Index() {
       setSelectedWallet(wallet);
       setWalletApi(api);
       localStorage.setItem('selectedWalletId', wallet!.id);
+
+      const addressHex = await api?.getChangeAddress();
+      setAddressHex(addressHex);
+
     } catch {
       setSelectedWallet(null);
     }
   }, []);
+
+  const handleConvert = useCallback(() => {
+    const decimals = 8; // the number of decimals your token has
+    const factor = Math.pow(10, decimals);
+
+    if (!addressHex || !amountInput) return;
+
+    const amountFloat = parseFloat(amountInput);
+    if (isNaN(amountFloat)) return;
+
+    const amountInteger = Math.round(amountFloat * factor);
+
+    const formData = new FormData();
+    formData.append("amount", amountInteger.toString());
+    formData.append("addressHex", addressHex);
+
+    fetcher.submit(formData, { method: "post", action: "/convert" });
+
+  }, [addressHex, amountInput]);
 
   useEffect(() => {
     const savedWalletId = localStorage.getItem('selectedWalletId');
@@ -50,6 +78,10 @@ export default function Index() {
   useEffect(() => {
     setWallets(getWallets());
   }, []);
+
+  useEffect(() => {
+    console.log(fetcher.data);
+  }, [fetcher.data]);
 
   return (
     <div className="w-[100vw] h-[100vh] flex justify-center items-center gap-2">
@@ -65,17 +97,21 @@ export default function Index() {
           {selectedWallet ? (
             <div
               className="flex items-center justify-center w-[50px] h-[50px] border border-[#00cdb8] rounded-full cursor-pointer
-               hover:bg-[#00cdb8]/10 active:bg-[#00cdb8]/20 transition select-none"
+              hover:bg-[#00cdb8]/10 active:bg-[#00cdb8]/20 transition select-none"
               onClick={handleOpenModal}
             >
               <div className="w-[24px] h-[24px]">
-                <img src={selectedWallet.icon} alt="Selected Wallet Icon" className="w-full h-full object-contain" />
+                <img
+                  src={selectedWallet.icon}
+                  alt="Selected Wallet Icon"
+                  className="w-full h-full object-contain"
+                />
               </div>
             </div>
           ) : (
             <div
               className="flex items-center justify-center w-[50px] h-[50px] border border-[#00cdb8] rounded-full cursor-pointer
-               hover:bg-[#00cdb8]/10 active:bg-[#00cdb8]/20 transition select-none"
+              hover:bg-[#00cdb8]/10 active:bg-[#00cdb8]/20 transition select-none"
               onClick={handleOpenModal}
             >
               <svg
@@ -138,7 +174,7 @@ export default function Index() {
 
         <div className="flex-grow w-full flex items-center justify-center">
           <div className="flex items-center justify-center w-[200px] p-2 bg-[#5A66F6] rounded-md cursor-pointer 
-                  hover:bg-[#4E5BE5] active:bg-[#3F4CCB] transition select-none">
+                  hover:bg-[#4E5BE5] active:bg-[#3F4CCB] transition select-none" onClick={handleConvert}>
             <ConvertIcon />
             <span className="text-black font-medium">CONVERT</span>
           </div>
