@@ -4,7 +4,6 @@ import { FishIcon } from "~/components/fish_icon";
 import { CardanoWallet, CardanoWalletApi, getWallets } from "@saibdev/bifrost";
 import { useCallback, useEffect, useState } from "react";
 import { SelectWalletModal } from "~/components/select_wallet_modal";
-
 export const meta: MetaFunction = () => {
   return [
     { title: "Fortuna Converter" },
@@ -13,51 +12,88 @@ export const meta: MetaFunction = () => {
 };
 
 export default function Index() {
-  const [wallets, setWallets] = useState<CardanoWallet[]>(getWallets());
+  const [wallets, setWallets] = useState<CardanoWallet[]>([]);
   const [selectedWallet, setSelectedWallet] = useState<CardanoWallet | null>(null);
   const [walletApi, setWalletApi] = useState<CardanoWalletApi>();
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [amountInput, setAmountInput] = useState<string>('');
 
   const handleOpenModal = useCallback(() => {
-    setIsModalOpen((prev) => !prev);
-  }, []);
+    if (selectedWallet) {
+      setSelectedWallet(null);
+      localStorage.removeItem('selectedWalletId');
+    } else {
+      setIsModalOpen(true);
+    }
+  }, [selectedWallet]);
 
-  const handleSelectWallet = useCallback((wallet: CardanoWallet | null) => {
-    setSelectedWallet(wallet!);
+  const handleSelectWallet = useCallback(async (wallet: CardanoWallet | null) => {
     setIsModalOpen(false);
+    try {
+      const api = await wallet?.enable();
+      setSelectedWallet(wallet);
+      setWalletApi(api);
+      localStorage.setItem('selectedWalletId', wallet!.id);
+    } catch {
+      setSelectedWallet(null);
+    }
   }, []);
 
   useEffect(() => {
-    const handleSetWalletApi = async () => {
-      if (selectedWallet) {
-        const api = await selectedWallet.enable();
-        setWalletApi(api);
-      }
+    const savedWalletId = localStorage.getItem('selectedWalletId');
+    const wallet = wallets.find((w) => w.id === savedWalletId);
+    if (wallet) {
+      handleSelectWallet(wallet);
     }
-    handleSetWalletApi();
-  }, [selectedWallet]);
+  }, [wallets]);
+
+  useEffect(() => {
+    setWallets(getWallets());
+  }, []);
 
   return (
     <div className="w-[100vw] h-[100vh] flex justify-center items-center gap-2">
-      {isModalOpen && <SelectWalletModal wallets={wallets} handleSelectWallet={handleSelectWallet} selectedWallet={selectedWallet}/>}
+      {isModalOpen && <SelectWalletModal
+        wallets={wallets} handleSelectWallet={handleSelectWallet}
+        selectedWallet={selectedWallet} onClose={() => setIsModalOpen(false)} />
+      }
       <div className="flex gap-4 flex-col w-[800px] h-[400px] bg-[#15191e] drop-shadow-xl rounded-lg p-5">
         <div className="flex justify-between items-center">
           <div className="w-[200px]">
             <img src="/logo.png" alt="Fortuna Logo" className="w-full h-full" />
           </div>
           {selectedWallet ? (
-            <div className="flex items-center justify-center w-[50px] p-2 bg-[#15191e] rounded-md cursor-pointer 
-            hover:bg-[#4E5BE5] active:bg-[#3F4CCB] transition select-none" onClick={handleOpenModal}>
-              <div className="w-[200px]">
-                <img src={selectedWallet.icon} alt="Fortuna Logo" className="w-full h-full" />
+            <div
+              className="flex items-center justify-center w-[50px] h-[50px] border border-[#00cdb8] rounded-full cursor-pointer
+               hover:bg-[#00cdb8]/10 active:bg-[#00cdb8]/20 transition select-none"
+              onClick={handleOpenModal}
+            >
+              <div className="w-[24px] h-[24px]">
+                <img src={selectedWallet.icon} alt="Selected Wallet Icon" className="w-full h-full object-contain" />
               </div>
             </div>
-          ) :
-            <div className="flex items-center justify-center w-[200px] p-2 bg-[#5A66F6] rounded-md cursor-pointer 
-          hover:bg-[#4E5BE5] active:bg-[#3F4CCB] transition select-none" onClick={handleOpenModal}>
-              <span className="text-black font-medium">SELECT WALLET</span>
+          ) : (
+            <div
+              className="flex items-center justify-center w-[50px] h-[50px] border border-[#00cdb8] rounded-full cursor-pointer
+               hover:bg-[#00cdb8]/10 active:bg-[#00cdb8]/20 transition select-none"
+              onClick={handleOpenModal}
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                strokeWidth={1.5}
+                stroke="#00cdb8"
+                className="w-6 h-6"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M2.75 5.75A2.25 2.25 0 015 3.5h14a2.25 2.25 0 012.25 2.25v1.25M2.75 5.75h18.5M2.75 5.75A2.25 2.25 0 000 8v9.5A2.25 2.25 0 002.25 19.75h16.5A2.25 2.25 0 0021 17.5V12H5a2.25 2.25 0 01-2.25-2.25V8a2.25 2.25 0 00-2.25-2.25zM21 12v-1.5A1.5 1.5 0 0019.5 9h-2a.75.75 0 000 1.5h2a.75.75 0 01.75.75V12z"
+                />
+              </svg>
             </div>
-          }
+          )}
         </div>
 
         <div className="w-full flex justify-center items-center">
@@ -82,10 +118,20 @@ export default function Index() {
 
         <div className="w-full">
           <div className="flex items-center w-full p-2 border rounded-md bg-[#1E2329] border-[#16191E]">
+            {/* Currency Icon */}
+            <img
+              src="fortuna_icon.png"
+              alt="Fortuna Icon"
+              className="h-6 w-6 mr-2"
+            />
+
+            {/* Input Field */}
             <input
               type="text"
               className="flex-grow bg-transparent text-[#D1D5DB] placeholder-[#6B7280] outline-none"
               placeholder="0"
+              value={amountInput}
+              onChange={(e) => setAmountInput(e.target.value)}
             />
           </div>
         </div>
