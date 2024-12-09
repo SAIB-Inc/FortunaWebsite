@@ -18,6 +18,7 @@
     "@remix-run/react": "^2.15.0",
     "@remix-run/serve": "^2.15.0",
     "@saibdev/bifrost": "^0.1.2",
+    "@tsparticles/confetti": "^3.7.1",
     "isbot": "^4.1.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",

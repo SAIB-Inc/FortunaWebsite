@@ -1,12 +1,14 @@
-import { json, type ActionFunction, type MetaFunction } from "@remix-run/node";
+import { type MetaFunction } from "@remix-run/node";
 import { ConvertIcon } from "~/components/convert_icon";
 import { FishIcon } from "~/components/fish_icon";
-import { AddressHex, CardanoWallet, CardanoWalletApi, CborHex, getWallets } from "@saibdev/bifrost";
+import { AddressHex, CardanoWallet, CardanoWalletApi, CborHex, getWallets, Transaction, Value } from "@saibdev/bifrost";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { SelectWalletModal } from "~/components/select_wallet_modal";
-import { buildConvertTunaTx } from "~/tunaTx";
 import { useFetcher } from "@remix-run/react";
-import { ConvertResponse, FinalizeResponse } from "~/types";
+import { ConvertResponse, FinalizeResponse, TunaBalance } from "~/types";
+import { SuccesModal } from "~/components/success_modal";
+import { Confetti } from "~/components/confetti";
+
 
 export const meta: MetaFunction = () => {
   return [
@@ -22,7 +24,13 @@ export default function Index() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [amountInput, setAmountInput] = useState<string>('');
   const [addressHex, setAddressHex] = useState<AddressHex>();
+  const [tunaBalance, setTunaBalance] = useState<TunaBalance>();
+  const [isLoading, setIsloading] = useState(false);
   const fetcher = useFetcher<ConvertResponse | FinalizeResponse>();
+  const dataFetcher = useFetcher();
+  const waitFetcher = useFetcher();
+  const [isSuccess, setIsSuccess] = useState(false);
+  const [isWaitingConfirmation, setIsWaitingConfirmation] = useState(false);
 
   const handleOpenModal = useCallback(() => {
     if (selectedWallet) {
@@ -43,14 +51,14 @@ export default function Index() {
 
       const addressHex = await api?.getChangeAddress();
       setAddressHex(addressHex);
-
     } catch {
       setSelectedWallet(null);
     }
   }, []);
 
   const handleConvert = useCallback(() => {
-    const decimals = 8; // the number of decimals your token has
+    setIsloading(true);
+    const decimals = 8;
     const factor = Math.pow(10, decimals);
 
     if (!addressHex || !amountInput) return;
@@ -63,8 +71,8 @@ export default function Index() {
     const formData = new FormData();
     formData.append("amount", amountInteger.toString());
     formData.append("addressHex", addressHex);
-
     fetcher.submit(formData, { method: "post", action: "/convert" });
+
 
   }, [addressHex, amountInput]);
 
@@ -76,6 +84,20 @@ export default function Index() {
     fetcher.submit(formData, { method: "post", action: "/finalize" });
   }, [fetcher.data]);
 
+  const handleGetBalance = useCallback((balanceCbor: CborHex<Value>) => {
+    const formData = new FormData();
+    formData.append("balanceCbor", balanceCbor);
+    dataFetcher.submit(formData, { method: "post", action: "/balance" });
+  }, [])
+
+  const handleWaitForTransaction = useCallback((addressHex: string, txId: string) => {
+    setIsWaitingConfirmation(true);
+    const formData = new FormData();
+    formData.append("addressHex", addressHex);
+    formData.append("txId", txId);
+    waitFetcher.submit(formData, { method: "post", action: "/wait" });
+  }, [])
+
   useEffect(() => {
     const savedWalletId = localStorage.getItem('selectedWalletId');
     const wallet = wallets.find((w) => w.id === savedWalletId);
@@ -85,27 +107,73 @@ export default function Index() {
   }, [wallets]);
 
   useEffect(() => {
+    const process = async () => {
+      const balance = await walletApi?.getBalance();
+      if (balance !== undefined) {
+        handleGetBalance(balance);
+      }
+    }
+    if (walletApi != undefined) {
+      process();
+    }
+  }, [walletApi, isWaitingConfirmation]);
+
+  useEffect(() => {
     setWallets(getWallets());
   }, []);
 
   useEffect(() => {
+    if (waitFetcher.data !== undefined && waitFetcher.data !== null) {
+      setIsWaitingConfirmation(false);
+    }
+  }, [waitFetcher.data])
+
+  useEffect(() => {
     const process = async () => {
       if (fetcher.data?.type === "convert") {
-        const txWitnessCbor = await walletApi?.signTx(fetcher.data.unsigned_tx_cbor as CborHex<{ __brand: "Transaction"; }>, true);
-        if(txWitnessCbor !== undefined && txWitnessCbor !== null) {
-          handleFinalize(fetcher.data.unsigned_tx_cbor, txWitnessCbor?.toString()!);
+        try {
+          const txWitnessCbor = await walletApi?.signTx(fetcher.data?.tx_cbor as CborHex<Transaction>, true);
+          if (txWitnessCbor !== undefined && txWitnessCbor !== null) {
+            handleFinalize(fetcher.data.tx_cbor, txWitnessCbor?.toString()!);
+          }
+        } catch (error) {
+          setIsloading(false);
         }
-      }else if(fetcher.data?.type === "finalize") {
-        const txHash = await walletApi?.submitTx(fetcher.data.signed_tx_cbor as CborHex<{ __brand: "Transaction"; }>);
-        console.log(txHash);
+      } else if (fetcher.data?.type === "finalize") {
+        const txHash = await walletApi?.submitTx(fetcher.data?.tx_cbor as CborHex<Transaction>);
+        if (txHash !== undefined) {
+          setIsSuccess(true);
+          setIsWaitingConfirmation(true);
+          handleWaitForTransaction(addressHex!, txHash);
+          setIsloading(false);
+        }
       }
     };
-    if (fetcher.data !== undefined) {
-      if(fetcher.data.success) {
+
+    if (fetcher.data !== undefined && fetcher.data !== null) {
+      setIsloading(true);
+      if (fetcher.data?.success) {
         process();
-        }
+      } else {
+        setIsloading(false);
+      }
     }
   }, [fetcher.data]);
+
+  useEffect(() => {
+    if (dataFetcher.data !== undefined && dataFetcher.data !== null) {
+      const decimals = 8;
+      const factor = Math.pow(10, decimals);
+      const result = dataFetcher.data as TunaBalance;
+      const tunaV1 = Number((Number(result.tuna_v1) / factor).toFixed(2));
+      const tunaV2 = Number((Number(result.tuna_v2) / factor).toFixed(2));
+      setTunaBalance({
+        tuna_v1: tunaV1,
+        tuna_v2: tunaV2
+      });
+    }
+
+  }, [dataFetcher.data])
 
   return (
     <div className="w-[100vw] h-[100vh] flex justify-center items-center gap-2">
@@ -113,6 +181,8 @@ export default function Index() {
         wallets={wallets} handleSelectWallet={handleSelectWallet}
         selectedWallet={selectedWallet} onClose={() => setIsModalOpen(false)} />
       }
+      {isSuccess && !isWaitingConfirmation && <Confetti />}
+      {isSuccess && <SuccesModal onClose={() => setIsSuccess(false)} isLoading={isWaitingConfirmation} />}
       <div className="flex gap-4 flex-col w-[800px] h-[400px] bg-[#15191e] drop-shadow-xl rounded-lg p-5">
         <div className="flex justify-between items-center">
           <div className="w-[200px]">
@@ -160,32 +230,32 @@ export default function Index() {
           <h1 className="text-[22px]">Convert Your V1 $TUNA</h1>
         </div>
 
-        <div className="flex w-full">
-          <div className="flex flex-grow flex-col">
+        <div className="grid grid-cols-3 items-center w-full">
+          <div className="flex flex-col">
             <div className="text-[#ff5861]">$TUNA V1</div>
-            <div className="text-[46px] font-semibold">0</div>
+            <div className="text-[46px] font-semibold">{tunaBalance ? tunaBalance.tuna_v1 : "0"}</div>
           </div>
-          <div className="flex flex-col justify-center items-center text-[30px]">
+
+          <div className="flex justify-center items-center">
             <button className="w-12 h-12 p-2 border border-[#00cdb8] rounded-full flex items-center justify-center text-[#00cdb8] hover:bg-[#00cdb8] hover:text-white transition">
               <FishIcon />
             </button>
           </div>
-          <div className="flex flex-grow flex-col text-right">
+
+          <div className="flex flex-col text-right">
             <div className="text-[#00a96e]">V2 $TUNA</div>
-            <div className="text-[46px] font-semibold">0</div>
+            <div className="text-[46px] font-semibold">{tunaBalance ? tunaBalance.tuna_v2 : "0"}</div>
           </div>
         </div>
 
+
         <div className="w-full">
           <div className="flex items-center w-full p-2 border rounded-md bg-[#1E2329] border-[#16191E]">
-            {/* Currency Icon */}
             <img
               src="fortuna_icon.png"
               alt="Fortuna Icon"
               className="h-6 w-6 mr-2"
             />
-
-            {/* Input Field */}
             <input
               type="text"
               className="flex-grow bg-transparent text-[#D1D5DB] placeholder-[#6B7280] outline-none"
@@ -198,9 +268,18 @@ export default function Index() {
 
         <div className="flex-grow w-full flex items-center justify-center">
           <div className="flex items-center justify-center w-[200px] p-2 bg-[#5A66F6] rounded-md cursor-pointer 
-                  hover:bg-[#4E5BE5] active:bg-[#3F4CCB] transition select-none" onClick={handleConvert}>
-            <ConvertIcon />
-            <span className="text-black font-medium">CONVERT</span>
+                  hover:bg-[#4E5BE5] active:bg-[#3F4CCB] transition select-none" onClick={!isLoading ? handleConvert : undefined}>
+            {isLoading ? (
+              <>
+                <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-black mr-2"></div>
+                <span className="text-black font-medium">Converting...</span>
+              </>
+            ) : (
+              <>
+                <ConvertIcon />
+                <span className="text-black font-medium">CONVERT</span>
+              </>
+            )}
           </div>
         </div>
 

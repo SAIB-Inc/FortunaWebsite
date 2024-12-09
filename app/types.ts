@@ -84,14 +84,18 @@ export function buildLockDatumPlutusData(lockDatum: LockDatum) {
     return Data.to(lockDatum, LockDatum);
 }
 
-export type ConvertResponse = {
-    type: "convert";
+
+export type BaseTxResponse = {
     success: boolean;
-    unsigned_tx_cbor: string;
+    tx_cbor: string;
+    error?: string;
 }
 
-export type FinalizeResponse = {
-    type: "finalize";
-    success: boolean;
-    signed_tx_cbor: string;
+export type ConvertResponse = {type: "convert"} & BaseTxResponse;
+
+export type FinalizeResponse = {type: "finalize"} & BaseTxResponse;
+
+export type TunaBalance = {
+    tuna_v1: number;
+    tuna_v2: number;
 }

@@ -1,16 +1,17 @@
-import { Blaze, Blockfrost, ColdWallet, Core, Data, Kupmios, makeValue } from "@blaze-cardano/sdk";
+import { Blaze, Blockfrost, ColdWallet, Core, Data, Kupmios, makeValue, Wallet } from "@blaze-cardano/sdk";
 import { Unwrapped } from "@blaze-cardano/ogmios";
-import { AssetId, NetworkId } from "@blaze-cardano/core";
-import { buildLockDatumPlutusData, buildUnlockRedeemerPlutusData, buildWithdrawRedeemerPlutusData, FORK_REWARD_ACCOUNT, FORK_SCRIPT_REF, FORK_VALIDATOR_ADDRESS, LOCK_STATE_ASSET_ID, LockDatum, MINT_SCRIPT_REF, TUNA_V1_ASSET_ID, TUNA_V2_ASSET_ID, TUNA_V2_MINT_REDEEMER, ConvertResponse } from "./types";
+import { AssetId, HexBlob, NetworkId, TransactionId, TransactionInput, TxCBOR, VkeyWitness } from "@blaze-cardano/core";
+import { buildLockDatumPlutusData, buildUnlockRedeemerPlutusData, buildWithdrawRedeemerPlutusData, FORK_REWARD_ACCOUNT, FORK_SCRIPT_REF, FORK_VALIDATOR_ADDRESS, LOCK_STATE_ASSET_ID, LockDatum, MINT_SCRIPT_REF, TUNA_V1_ASSET_ID, TUNA_V2_ASSET_ID, TUNA_V2_MINT_REDEEMER, ConvertResponse, TunaBalance } from "./types";
+import { CborHex, Transaction, Value } from "@saibdev/bifrost";
 
 export async function buildConvertTunaTx(addressHex: string, amount: bigint) {
 
     const provider = new Blockfrost(
         {
-          network: "cardano-mainnet",
-          projectId: "mainnetuRUrQ38l0TbUCUbjDDRNfi8ng1qxCtpT",
+            network: "cardano-mainnet",
+            projectId: "mainnetuRUrQ38l0TbUCUbjDDRNfi8ng1qxCtpT",
         }
-      )
+    )
 
     const wallet = new ColdWallet(
         Core.Address.fromBytes(Core.HexBlob.fromBytes(Buffer.from(addressHex, 'hex'))),
@@ -50,9 +51,69 @@ export async function buildConvertTunaTx(addressHex: string, amount: bigint) {
         )
         .addWithdrawal(FORK_REWARD_ACCOUNT, 0n, withdrawRedeemer)
         .complete();
-    
-    
 
     return txRaw.toCbor();
 }
+
+export function finalizeTx(unsignedTxCbor: CborHex<Transaction>, txWitnessCbor: string) {
+    const vkeyWitnessSet = Core.TransactionWitnessSet.fromCbor(HexBlob.fromBytes(Buffer.from(txWitnessCbor, 'hex')))
+    const tx = Core.Transaction.fromCbor(unsignedTxCbor as string as TxCBOR)
+    const redeemers = tx.witnessSet().redeemers();
+    vkeyWitnessSet.setRedeemers(redeemers!);
+    tx.setWitnessSet(vkeyWitnessSet);
+    return tx.toCbor();
+
+}
+
+export function getBalance(balanceCbor: CborHex<Value>) {
+    const balance = Core.Value.fromCbor(HexBlob.fromBytes(Buffer.from(balanceCbor, 'hex')))
+    let v1Balance = 0n;
+    let v2Balance = 0n;
+
+    balance.multiasset()?.forEach((value, key) => {
+        if (key === TUNA_V1_ASSET_ID) {
+            v1Balance = value;
+        } else if (key === TUNA_V2_ASSET_ID) {
+            v2Balance = value;
+        }
+    })
+
+    const response: TunaBalance = {
+        tuna_v1: Number(v1Balance),
+        tuna_v2: Number(v2Balance),
+    }
+    return response;
+
+}
+
+export async function waitForTransaction(addressHex: string, txId: string) {
+    const provider = new Blockfrost(
+        {
+            network: "cardano-mainnet",
+            projectId: "mainnetuRUrQ38l0TbUCUbjDDRNfi8ng1qxCtpT",
+        }
+    )
+    const wallet = new ColdWallet(
+        Core.Address.fromBytes(Core.HexBlob.fromBytes(Buffer.from(addressHex, 'hex'))),
+        NetworkId.Mainnet,
+        provider,
+    );
+    const transaction_id = TransactionId(txId);
+    const blaze = await Blaze.from(provider, wallet);
+    console.log("Waiting for transaction to be confirmed");
+    while (true) {
+        try {
+            delay(1000);
+            await blaze.provider.resolveUnspentOutputs([new TransactionInput(transaction_id, 0n)]);
+            console.log("Transaction confirmed: " + txId);
+            break;
+        } catch (error) {
+        }
+    }
+}
+
+async function delay(ms: number) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
+
 
