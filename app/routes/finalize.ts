@@ -1,4 +1,4 @@
-import { ActionFunctionArgs, json } from "@remix-run/node";
+import { ActionFunctionArgs } from "@remix-run/node";
 import { CborHex, Transaction } from "@saibdev/bifrost";
 import { finalizeTx } from "~/tunaTx";
 import { FinalizeResponse } from "~/types";

@@ -1,7 +1,7 @@
 import { ActionFunctionArgs } from "@remix-run/node";
 import { CborHex, Value } from "@saibdev/bifrost";
-import { finalizeTx, getBalance } from "~/tunaTx";
-import { FinalizeResponse } from "~/types";
+import {  getBalance } from "~/tunaTx";
+
 
 export async function action({ request }: ActionFunctionArgs) {
     const formData = await request.formData();

@@ -1,4 +1,4 @@
-import { AssetId, CredentialType, Hash28ByteBase16, NetworkId, Address, RewardAccount, TransactionId, TransactionInput, addressFromValidator, addressFromCredential } from "@blaze-cardano/core";
+import { AssetId, CredentialType, Hash28ByteBase16, NetworkId, RewardAccount, TransactionId, TransactionInput,  addressFromCredential } from "@blaze-cardano/core";
 import { Constr, Core, Data, Static } from "@blaze-cardano/sdk";
 
 export const V1_TUNA_POLICY_ID = '279f842c33eed9054b9e3c70cd6a3b32298259c24b78b895cb41d91a';

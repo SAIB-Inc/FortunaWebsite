@@ -2,7 +2,7 @@ import { type MetaFunction } from "@remix-run/node";
 import { ConvertIcon } from "~/components/convert_icon";
 import { FishIcon } from "~/components/fish_icon";
 import { AddressHex, CardanoWallet, CardanoWalletApi, CborHex, getWallets, Transaction, Value } from "@saibdev/bifrost";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { SelectWalletModal } from "~/components/select_wallet_modal";
 import { useFetcher } from "@remix-run/react";
 import { ConvertResponse, FinalizeResponse, TunaBalance } from "~/types";
