@@ -1,14 +1,16 @@
-import { Blaze, ColdWallet, Core, Data, Kupmios, makeValue } from "@blaze-cardano/sdk";
+import { Blaze, Blockfrost, ColdWallet, Core, Data, Kupmios, makeValue } from "@blaze-cardano/sdk";
 import { Unwrapped } from "@blaze-cardano/ogmios";
 import { AssetId, NetworkId } from "@blaze-cardano/core";
-import { buildLockDatumPlutusData, buildUnlockRedeemerPlutusData, buildWithdrawRedeemerPlutusData, FORK_REWARD_ACCOUNT, FORK_SCRIPT_REF, FORK_VALIDATOR_ADDRESS, LOCK_STATE_ASSET_ID, LockDatum, MINT_SCRIPT_REF, TUNA_V1_ASSET_ID, TUNA_V2_ASSET_ID, TUNA_V2_MINT_REDEEMER } from "./types";
+import { buildLockDatumPlutusData, buildUnlockRedeemerPlutusData, buildWithdrawRedeemerPlutusData, FORK_REWARD_ACCOUNT, FORK_SCRIPT_REF, FORK_VALIDATOR_ADDRESS, LOCK_STATE_ASSET_ID, LockDatum, MINT_SCRIPT_REF, TUNA_V1_ASSET_ID, TUNA_V2_ASSET_ID, TUNA_V2_MINT_REDEEMER, ConvertResponse } from "./types";
 
 export async function buildConvertTunaTx(addressHex: string, amount: bigint) {
 
-    const provider = new Kupmios(
-        "https://kupo1shqzdry3gh2dsgdy3lg.mainnet-v2.kupo-m1.demeter.run",
-        await Unwrapped.Ogmios.new("https://ogmios199hxc0fnr4wpjg8cp37.mainnet-v6.ogmios-m1.demeter.run")
-    );
+    const provider = new Blockfrost(
+        {
+          network: "cardano-mainnet",
+          projectId: "mainnetuRUrQ38l0TbUCUbjDDRNfi8ng1qxCtpT",
+        }
+      )
 
     const wallet = new ColdWallet(
         Core.Address.fromBytes(Core.HexBlob.fromBytes(Buffer.from(addressHex, 'hex'))),
@@ -27,6 +29,8 @@ export async function buildConvertTunaTx(addressHex: string, amount: bigint) {
 
     const newLockedTunaV1Amount = lockedDatum.currentLockedTuna + amount;
     lockedDatum.currentLockedTuna = newLockedTunaV1Amount;
+    const withdrawRedeemer = buildWithdrawRedeemerPlutusData(amount);
+
 
     const newLockedDatum = buildLockDatumPlutusData(lockedDatum);
     const txRaw = await blaze
@@ -44,7 +48,11 @@ export async function buildConvertTunaTx(addressHex: string, amount: bigint) {
             new Map([[AssetId.getAssetName(TUNA_V2_ASSET_ID), amount]]),
             TUNA_V2_MINT_REDEEMER,
         )
-        .addWithdrawal(FORK_REWARD_ACCOUNT, 0n, buildWithdrawRedeemerPlutusData(0n))
+        .addWithdrawal(FORK_REWARD_ACCOUNT, 0n, withdrawRedeemer)
         .complete();
+    
+    
 
+    return txRaw.toCbor();
 }
+

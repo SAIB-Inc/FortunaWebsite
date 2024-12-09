@@ -83,3 +83,15 @@ export const LockDatum = LockDatumSchema as unknown as LockDatum;
 export function buildLockDatumPlutusData(lockDatum: LockDatum) {
     return Data.to(lockDatum, LockDatum);
 }
+
+export type ConvertResponse = {
+    type: "convert";
+    success: boolean;
+    unsigned_tx_cbor: string;
+}
+
+export type FinalizeResponse = {
+    type: "finalize";
+    success: boolean;
+    signed_tx_cbor: string;
+}

@@ -1,11 +1,12 @@
 import { json, type ActionFunction, type MetaFunction } from "@remix-run/node";
 import { ConvertIcon } from "~/components/convert_icon";
 import { FishIcon } from "~/components/fish_icon";
-import { AddressHex, CardanoWallet, CardanoWalletApi, getWallets } from "@saibdev/bifrost";
+import { AddressHex, CardanoWallet, CardanoWalletApi, CborHex, getWallets } from "@saibdev/bifrost";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { SelectWalletModal } from "~/components/select_wallet_modal";
 import { buildConvertTunaTx } from "~/tunaTx";
 import { useFetcher } from "@remix-run/react";
+import { ConvertResponse, FinalizeResponse } from "~/types";
 
 export const meta: MetaFunction = () => {
   return [
@@ -21,7 +22,7 @@ export default function Index() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [amountInput, setAmountInput] = useState<string>('');
   const [addressHex, setAddressHex] = useState<AddressHex>();
-  const fetcher = useFetcher();
+  const fetcher = useFetcher<ConvertResponse | FinalizeResponse>();
 
   const handleOpenModal = useCallback(() => {
     if (selectedWallet) {
@@ -67,6 +68,14 @@ export default function Index() {
 
   }, [addressHex, amountInput]);
 
+  const handleFinalize = useCallback((unsignedTxCbor: string, txWitnessCbor: string) => {
+    const formData = new FormData();
+    formData.append("unsignedTxCbor", unsignedTxCbor);
+    formData.append("txWitnessCbor", txWitnessCbor);
+
+    fetcher.submit(formData, { method: "post", action: "/finalize" });
+  }, [fetcher.data]);
+
   useEffect(() => {
     const savedWalletId = localStorage.getItem('selectedWalletId');
     const wallet = wallets.find((w) => w.id === savedWalletId);
@@ -80,7 +89,22 @@ export default function Index() {
   }, []);
 
   useEffect(() => {
-    console.log(fetcher.data);
+    const process = async () => {
+      if (fetcher.data?.type === "convert") {
+        const txWitnessCbor = await walletApi?.signTx(fetcher.data.unsigned_tx_cbor as CborHex<{ __brand: "Transaction"; }>, true);
+        if(txWitnessCbor !== undefined && txWitnessCbor !== null) {
+          handleFinalize(fetcher.data.unsigned_tx_cbor, txWitnessCbor?.toString()!);
+        }
+      }else if(fetcher.data?.type === "finalize") {
+        const txHash = await walletApi?.submitTx(fetcher.data.signed_tx_cbor as CborHex<{ __brand: "Transaction"; }>);
+        console.log(txHash);
+      }
+    };
+    if (fetcher.data !== undefined) {
+      if(fetcher.data.success) {
+        process();
+        }
+    }
   }, [fetcher.data]);
 
   return (
