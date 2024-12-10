@@ -315,7 +315,7 @@ export default function Index() {
             )}
           </div>
 
-          <div className="w-full flex justify-center">
+          <div className="w-full flex justify-center h-[20px]">
             <span className="text-sm text-[#ff5861]">{statusMessage}</span>
           </div>
         </div>
