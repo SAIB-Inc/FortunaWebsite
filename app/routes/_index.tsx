@@ -394,7 +394,7 @@ export default function Index() {
               </svg>
             </a>
             <a
-              href="https://discord.gg/Vc3x8N9nz2"
+              href="https://discord.gg/EH2E2VsFDs"
               target="_blank"
               rel="noopener noreferrer"
               className="hover:text-primary transition-colors"
