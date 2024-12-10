@@ -47,6 +47,8 @@ export default function Index() {
   const handleOpenModal = useCallback(() => {
     if (selectedWallet) {
       setSelectedWallet(null);
+      setWalletApi(undefined);
+      setIsReady(false);
       localStorage.removeItem('selectedWalletId');
     } else {
       setIsModalOpen(true);
@@ -64,7 +66,6 @@ export default function Index() {
       setAddressHex(addressHex);
     } catch {
       setSelectedWallet(null);
-      setIsReady(false);
       setWalletApi(undefined);
     }
   }, []);
