@@ -18,6 +18,7 @@ export const action: ActionFunction = async ({ request }) => {
     response.tx_cbor = builtTx;
     return response;
   } catch (error: any) {
+    console.error(error);
     response.error = error.message;
     return response;
   }
