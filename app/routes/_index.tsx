@@ -369,7 +369,7 @@ export default function Index() {
             </a>
           </div>
           <div className="text-center">
-            <span>Icons and images taken from </span>
+            <span>Icons and Images taken from </span>
             <a
               href="https://minefortuna.com/"
               target="_blank"
