@@ -42,6 +42,7 @@ export default function Index() {
   const [isWaitingConfirmation, setIsWaitingConfirmation] = useState(false);
   const [statusMessage, setStatusMessage] = useState<string>("");
   const [transactionId, setTransactionId] = useState<string>("");
+  const [isReady, setIsReady] = useState(false);
 
   const handleOpenModal = useCallback(() => {
     if (selectedWallet) {
@@ -63,6 +64,7 @@ export default function Index() {
       setAddressHex(addressHex);
     } catch {
       setSelectedWallet(null);
+      setIsReady(false);
       setWalletApi(undefined);
     }
   }, []);
@@ -220,6 +222,7 @@ export default function Index() {
         tuna_v1: tunaV1,
         tuna_v2: tunaV2
       });
+      setIsReady(true);
     }
 
   }, [dataFetcher.data])
@@ -311,6 +314,7 @@ export default function Index() {
               placeholder="0"
               value={amountInput}
               onChange={(e) => setAmountInput(e.target.value)}
+              disabled={!isReady}
             />
           </div>
         </div>
@@ -320,6 +324,7 @@ export default function Index() {
             className="flex items-center justify-center w-[200px] p-2 bg-[#5A66F6] rounded-md cursor-pointer 
                hover:bg-[#4E5BE5] active:bg-[#3F4CCB] transition select-none"
             onClick={!isLoading ? handleConvert : undefined}
+            disabled={!isReady}
           >
             {isLoading ? (
               <>
