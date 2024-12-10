@@ -31,6 +31,7 @@ export default function Index() {
   const waitFetcher = useFetcher();
   const [isSuccess, setIsSuccess] = useState(false);
   const [isWaitingConfirmation, setIsWaitingConfirmation] = useState(false);
+  const [statusMessage, setStatusMessage] = useState<string>("");
 
   const handleOpenModal = useCallback(() => {
     if (selectedWallet) {
@@ -53,28 +54,52 @@ export default function Index() {
       setAddressHex(addressHex);
     } catch {
       setSelectedWallet(null);
+      setWalletApi(undefined);
     }
   }, []);
 
   const handleConvert = useCallback(() => {
     setIsloading(true);
+    if (selectedWallet === null || selectedWallet === undefined) {
+      setIsModalOpen(true);
+      setIsloading(false);
+      return;
+    }
+    if (tunaBalance?.tuna_v1 === 0) {
+      setStatusMessage("You don't have any V1 $TUNA to convert");
+      setIsloading(false);
+      return;
+    }
     const decimals = 8;
     const factor = Math.pow(10, decimals);
 
-    if (!addressHex || !amountInput) return;
+    if (!amountInput) {
+      setStatusMessage("Please enter an amount to convert");
+      setIsloading(false);
+      return;
+    };
 
     const amountFloat = parseFloat(amountInput);
-    if (isNaN(amountFloat)) return;
+    if (isNaN(amountFloat)) {
+      setStatusMessage("Please enter a valid amount to convert");
+      setIsloading(false);
+      return;
+    };
 
     const amountInteger = Math.round(amountFloat * factor);
 
+    if (amountInteger == 0) {
+      setStatusMessage("Please enter an amount greater than 0");
+      setIsloading(false);
+      return;
+    };
+
     const formData = new FormData();
     formData.append("amount", amountInteger.toString());
-    formData.append("addressHex", addressHex);
+    formData.append("addressHex", addressHex!);
     fetcher.submit(formData, { method: "post", action: "/convert" });
 
-
-  }, [addressHex, amountInput]);
+  }, [addressHex, amountInput, selectedWallet]);
 
   const handleFinalize = useCallback((unsignedTxCbor: string, txWitnessCbor: string) => {
     const formData = new FormData();
@@ -113,10 +138,15 @@ export default function Index() {
         handleGetBalance(balance);
       }
     }
-    if (walletApi != undefined) {
+    if (selectedWallet === null || walletApi === undefined) {
+      setTunaBalance({
+        tuna_v1: 0,
+        tuna_v2: 0
+      });
+    } else if (walletApi != undefined) {
       process();
     }
-  }, [walletApi, isWaitingConfirmation]);
+  }, [walletApi, isWaitingConfirmation, selectedWallet]);
 
   useEffect(() => {
     setWallets(getWallets());
@@ -266,9 +296,12 @@ export default function Index() {
           </div>
         </div>
 
-        <div className="flex-grow w-full flex items-center justify-center">
-          <div className="flex items-center justify-center w-[200px] p-2 bg-[#5A66F6] rounded-md cursor-pointer 
-                  hover:bg-[#4E5BE5] active:bg-[#3F4CCB] transition select-none" onClick={!isLoading ? handleConvert : undefined}>
+        <div className="flex-grow w-full flex flex-col items-center justify-center space-y-2">
+          <div
+            className="flex items-center justify-center w-[200px] p-2 bg-[#5A66F6] rounded-md cursor-pointer 
+               hover:bg-[#4E5BE5] active:bg-[#3F4CCB] transition select-none"
+            onClick={!isLoading ? handleConvert : undefined}
+          >
             {isLoading ? (
               <>
                 <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-black mr-2"></div>
@@ -281,9 +314,11 @@ export default function Index() {
               </>
             )}
           </div>
+
+          <div className="w-full flex justify-center">
+            <span className="text-sm text-[#ff5861]">{statusMessage}</span>
+          </div>
         </div>
-
-
       </div>
     </div>
   );
