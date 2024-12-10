@@ -105,7 +105,7 @@ export default function Index() {
     }
 
 
-    if(amountFloat > tunaBalance?.tuna_v1!){
+    if (amountFloat > tunaBalance?.tuna_v1!) {
       setStatusMessage("You don't have enough V1 $TUNA to convert");
       setIsloading(false);
       return
@@ -337,26 +337,30 @@ export default function Index() {
             <span className="text-sm text-[#ff5861]">{statusMessage}</span>
           </div>
         </div>
-        <footer className="mt-40 text-[#D1D5DB] text-sm flex flex-col items-center justify-center gap-2">
+        <footer className="mt-40 text-[#D1D5DB] text-sm flex flex-col items-center justify-center gap-4 py-4 border-t border-gray-700">
           <div className="flex items-center justify-center gap-2">
-            <span>Developed by</span>
+            <span className="font-medium">Developed by</span>
             <a
               href="https://saib.dev"
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center hover:opacity-80 transition-opacity"
+              className="inline-flex items-center hover:opacity-80 transition-opacity gap-2"
             >
               <div className="w-[20px] flex">
                 <img src="/saib-logo.svg" alt="Saib Logo" className="w-full h-full" />
               </div>
+              <span className="font-semibold text-[#D1D5DB]">SAIB Inc.</span>
             </a>
           </div>
-          <div>
-            Assets courtesy of{" "}
-            <a href="https://minefortuna.com/" target="_blank" rel="noopener noreferrer"
-              className="text-[#00cdb8] hover:underline"
+          <div className="text-center">
+            <span>Icons and images taken from </span>
+            <a
+              href="https://minefortuna.com/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-[#00cdb8] font-semibold hover:underline"
             >
-              minefortuna
+              minefortuna.com
             </a>
           </div>
         </footer>
