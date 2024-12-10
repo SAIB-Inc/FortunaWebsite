@@ -191,7 +191,7 @@ export default function Index() {
         if (txHash !== undefined) {
           setTransactionId(txHash);
           setIsSuccess(true);
-          setAmountInput("0");
+          setAmountInput("");
           setIsWaitingConfirmation(true);
           handleWaitForTransaction(addressHex!, txHash);
           setIsloading(false);
