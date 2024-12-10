@@ -1,5 +1,4 @@
-import { Blaze, Blockfrost, ColdWallet, Core, Data, Kupmios, makeValue, Wallet } from "@blaze-cardano/sdk";
-import { Unwrapped } from "@blaze-cardano/ogmios";
+import { Blaze, Blockfrost, ColdWallet, Core, Data, makeValue } from "@blaze-cardano/sdk";
 import { AssetId, HexBlob, NetworkId, TransactionId, TransactionInput, TxCBOR, VkeyWitness } from "@blaze-cardano/core";
 import { buildLockDatumPlutusData, buildUnlockRedeemerPlutusData, buildWithdrawRedeemerPlutusData, FORK_REWARD_ACCOUNT, FORK_SCRIPT_REF, FORK_VALIDATOR_ADDRESS, LOCK_STATE_ASSET_ID, LockDatum, MINT_SCRIPT_REF, TUNA_V1_ASSET_ID, TUNA_V2_ASSET_ID, TUNA_V2_MINT_REDEEMER, ConvertResponse, TunaBalance } from "./types";
 import { CborHex, Transaction, Value } from "@saibdev/bifrost";
@@ -100,12 +99,10 @@ export async function waitForTransaction(addressHex: string, txId: string) {
     );
     const transaction_id = TransactionId(txId);
     const blaze = await Blaze.from(provider, wallet);
-    console.log("Waiting for transaction to be confirmed");
     while (true) {
         try {
             delay(1000);
             await blaze.provider.resolveUnspentOutputs([new TransactionInput(transaction_id, 0n)]);
-            console.log("Transaction confirmed: " + txId);
             break;
         } catch (error) {
         }

@@ -14,6 +14,15 @@ export const meta: MetaFunction = () => {
   return [
     { title: "Fortuna Converter" },
     { name: "description", content: "Convert your V1 $TUNA to V2 $TUNA" },
+    { property: "og:url", content: "https://fortuna-converter.saib.dev" },
+    { property: "og:type", content: "website" },
+    { property: "og:title", content: "Fortuna Converter" },
+    { property: "og:description", content: "Convert your V1 $TUNA to V2 $TUNA" },
+    { property: "og:image", content: "https://raw.githubusercontent.com/ricomiles/Assets/refs/heads/main/fortuna.png" },
+    { name: "twitter:card", content: "summary_large_image" },
+    { name: "twitter:title", content: "Fortuna Converter" },
+    { name: "twitter:description", content: "Convert your V1 $TUNA to V2 $TUNA" },
+    { name: "twitter:image", content: "https://raw.githubusercontent.com/ricomiles/Assets/refs/heads/main/fortuna.png" },
   ];
 };
 
@@ -32,6 +41,7 @@ export default function Index() {
   const [isSuccess, setIsSuccess] = useState(false);
   const [isWaitingConfirmation, setIsWaitingConfirmation] = useState(false);
   const [statusMessage, setStatusMessage] = useState<string>("");
+  const [transactionId, setTransactionId] = useState<string>("");
 
   const handleOpenModal = useCallback(() => {
     if (selectedWallet) {
@@ -49,7 +59,6 @@ export default function Index() {
       setSelectedWallet(wallet);
       setWalletApi(api);
       localStorage.setItem('selectedWalletId', wallet!.id);
-
       const addressHex = await api?.getChangeAddress();
       setAddressHex(addressHex);
     } catch {
@@ -59,14 +68,10 @@ export default function Index() {
   }, []);
 
   const handleConvert = useCallback(() => {
+    setStatusMessage("");
     setIsloading(true);
     if (selectedWallet === null || selectedWallet === undefined) {
       setIsModalOpen(true);
-      setIsloading(false);
-      return;
-    }
-    if (tunaBalance?.tuna_v1 === 0) {
-      setStatusMessage("You don't have any V1 $TUNA to convert");
       setIsloading(false);
       return;
     }
@@ -88,11 +93,16 @@ export default function Index() {
 
     const amountInteger = Math.round(amountFloat * factor);
 
-    if (amountInteger == 0) {
+    if (amountInteger <= 0) {
       setStatusMessage("Please enter an amount greater than 0");
       setIsloading(false);
       return;
     };
+    if (tunaBalance?.tuna_v1 === 0) {
+      setStatusMessage("You don't have any V1 $TUNA to convert");
+      setIsloading(false);
+      return;
+    }
 
     const formData = new FormData();
     formData.append("amount", amountInteger.toString());
@@ -172,6 +182,7 @@ export default function Index() {
       } else if (fetcher.data?.type === "finalize") {
         const txHash = await walletApi?.submitTx(fetcher.data?.tx_cbor as CborHex<Transaction>);
         if (txHash !== undefined) {
+          setTransactionId(txHash);
           setIsSuccess(true);
           setIsWaitingConfirmation(true);
           handleWaitForTransaction(addressHex!, txHash);
@@ -212,7 +223,7 @@ export default function Index() {
         selectedWallet={selectedWallet} onClose={() => setIsModalOpen(false)} />
       }
       {isSuccess && !isWaitingConfirmation && <Confetti />}
-      {isSuccess && <SuccesModal onClose={() => setIsSuccess(false)} isLoading={isWaitingConfirmation} />}
+      {isSuccess && <SuccesModal onClose={() => setIsSuccess(false)} isLoading={isWaitingConfirmation} txId={transactionId} />}
       <div className="flex gap-4 flex-col w-[800px] h-[400px] bg-[#15191e] drop-shadow-xl rounded-lg p-5">
         <div className="flex justify-between items-center">
           <div className="w-[200px]">
@@ -314,11 +325,33 @@ export default function Index() {
               </>
             )}
           </div>
-
           <div className="w-full flex justify-center h-[20px]">
             <span className="text-sm text-[#ff5861]">{statusMessage}</span>
           </div>
         </div>
+        <footer className="mt-40 text-[#D1D5DB] text-sm flex flex-col items-center justify-center gap-2">
+          <div className="flex items-center justify-center gap-2">
+            <span>Developed by</span>
+            <a
+              href="https://saib.dev"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center hover:opacity-80 transition-opacity"
+            >
+              <div className="w-[20px] flex">
+                <img src="/saib-logo.svg" alt="Saib Logo" className="w-full h-full" />
+              </div>
+            </a>
+          </div>
+          <div>
+            Assets courtesy of{" "}
+            <a href="https://minefortuna.com/" target="_blank" rel="noopener noreferrer"
+              className="text-[#00cdb8] hover:underline"
+            >
+              minefortuna
+            </a>
+          </div>
+        </footer>
       </div>
     </div>
   );
