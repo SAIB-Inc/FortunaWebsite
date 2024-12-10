@@ -4,9 +4,10 @@ interface SuccesModalProps {
     onClose: () => void;
     isLoading: boolean;
     txId: string;
+    explorerUrl: string | undefined;
 }
 
-const SuccessModal = ({ onClose, isLoading, txId }: SuccesModalProps) => {
+const SuccessModal = ({ onClose, isLoading, txId, explorerUrl }: SuccesModalProps) => {
     return (
         <div
             className="fixed inset-0 backdrop-blur-sm bg-black/30 z-10 flex items-center justify-center"
@@ -35,7 +36,7 @@ const SuccessModal = ({ onClose, isLoading, txId }: SuccesModalProps) => {
 
                 {/* Transaction Link */}
                 <a
-                    href={`https://cardanoscan.io/transaction/${txId}`}
+                    href={`${explorerUrl}/${txId}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-[#00cdb8] hover:underline text-md mb-6"

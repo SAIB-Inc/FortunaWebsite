@@ -5,8 +5,8 @@ import { CborHex, Transaction, Value } from "@saibdev/bifrost";
 
 const provider = new Blockfrost(
     {
-        network: "cardano-mainnet",
-        projectId: "mainnetuRUrQ38l0TbUCUbjDDRNfi8ng1qxCtpT",
+        network: process.env.BLOCKFROST_NETWORK as any,
+        projectId: process.env.BLOCKFROST_PROJECT_ID as string,
     }
 );
 

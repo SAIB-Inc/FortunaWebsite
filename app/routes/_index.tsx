@@ -4,7 +4,7 @@ import { FishIcon } from "~/components/fish_icon";
 import { AddressHex, CardanoWallet, CardanoWalletApi, CborHex, getWallets, Transaction, Value } from "@saibdev/bifrost";
 import { useCallback, useEffect, useState } from "react";
 import { SelectWalletModal } from "~/components/select_wallet_modal";
-import { useFetcher } from "@remix-run/react";
+import { useFetcher, useLoaderData } from "@remix-run/react";
 import { ConvertResponse, FinalizeResponse, TunaBalance } from "~/types";
 import { SuccessModal } from "~/components/success_modal";
 import { Confetti } from "~/components/confetti";
@@ -26,7 +26,16 @@ export const meta: MetaFunction = () => {
   ];
 };
 
+export const loader = async () => {
+  return {
+    cardanoTxExplorer: process.env.CARDANO_TX_EXPLORER,
+  };
+}
+
 export default function Index() {
+  
+  const { cardanoTxExplorer } = useLoaderData<typeof loader>();
+
   const [wallets, setWallets] = useState<CardanoWallet[]>([]);
   const [selectedWallet, setSelectedWallet] = useState<CardanoWallet | null>(null);
   const [walletApi, setWalletApi] = useState<CardanoWalletApi>();
@@ -235,7 +244,7 @@ export default function Index() {
         selectedWallet={selectedWallet} onClose={() => setIsModalOpen(false)} />
       }
       {isSuccess && !isWaitingConfirmation && <Confetti />}
-      {isSuccess && <SuccessModal onClose={() => setIsSuccess(false)} isLoading={isWaitingConfirmation} txId={transactionId} />}
+      {isSuccess && <SuccessModal onClose={() => setIsSuccess(false)} isLoading={isWaitingConfirmation} txId={transactionId} explorerUrl={cardanoTxExplorer} />}
       <div className="flex gap-4 flex-col w-[800px] h-[400px] bg-[#15191e] drop-shadow-xl rounded-lg p-5">
         <div className="flex justify-between items-center">
           <div className="w-[200px]">
