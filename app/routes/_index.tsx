@@ -104,6 +104,13 @@ export default function Index() {
       return;
     }
 
+
+    if(amountFloat > tunaBalance?.tuna_v1!){
+      setStatusMessage("You don't have enough V1 $TUNA to convert");
+      setIsloading(false);
+      return
+    }
+
     const formData = new FormData();
     formData.append("amount", amountInteger.toString());
     formData.append("addressHex", addressHex!);
