@@ -6,7 +6,7 @@ import { useCallback, useEffect, useState } from "react";
 import { SelectWalletModal } from "~/components/select_wallet_modal";
 import { useFetcher } from "@remix-run/react";
 import { ConvertResponse, FinalizeResponse, TunaBalance } from "~/types";
-import { SuccesModal } from "~/components/success_modal";
+import { SuccessModal } from "~/components/success_modal";
 import { Confetti } from "~/components/confetti";
 
 
@@ -234,7 +234,7 @@ export default function Index() {
         selectedWallet={selectedWallet} onClose={() => setIsModalOpen(false)} />
       }
       {isSuccess && !isWaitingConfirmation && <Confetti />}
-      {isSuccess && <SuccesModal onClose={() => setIsSuccess(false)} isLoading={isWaitingConfirmation} txId={transactionId} />}
+      {isSuccess && <SuccessModal onClose={() => setIsSuccess(false)} isLoading={isWaitingConfirmation} txId={transactionId} />}
       <div className="flex gap-4 flex-col w-[800px] h-[400px] bg-[#15191e] drop-shadow-xl rounded-lg p-5">
         <div className="flex justify-between items-center">
           <div className="w-[200px]">
@@ -321,23 +321,24 @@ export default function Index() {
 
         <div className="flex-grow w-full flex flex-col items-center justify-center space-y-2">
           <button
-            className="flex items-center justify-center w-[200px] p-2 bg-[#5A66F6] rounded-md cursor-pointer 
-               hover:bg-[#4E5BE5] active:bg-[#3F4CCB] transition select-none"
+            className="flex items-center justify-center w-[200px] p-3 bg-[#5A66F6] rounded-md cursor-pointer 
+             hover:bg-[#4E5BE5] active:bg-[#3F4CCB] transition select-none text-lg font-medium disabled:bg-gray-500 disabled:cursor-not-allowed"
             onClick={!isLoading ? handleConvert : undefined}
             disabled={!isReady}
           >
             {isLoading ? (
               <>
-                <span className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-black mr-2"></span>
-                <span className="text-black font-medium">Converting...</span>
+                <span className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-white mr-2"></span>
+                <span className="text-white font-medium">Converting...</span>
               </>
             ) : (
               <>
                 <ConvertIcon />
-                <span className="text-black font-medium">CONVERT</span>
+                <span className="text-white font-medium">CONVERT</span>
               </>
             )}
           </button>
+
           <div className="w-full flex justify-center h-[20px]">
             <span className="text-sm text-[#ff5861]">{statusMessage}</span>
           </div>
