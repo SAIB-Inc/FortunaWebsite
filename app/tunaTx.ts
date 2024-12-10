@@ -3,14 +3,14 @@ import { AssetId, HexBlob, NetworkId, TransactionId, TransactionInput, TxCBOR, V
 import { buildLockDatumPlutusData, buildUnlockRedeemerPlutusData, buildWithdrawRedeemerPlutusData, FORK_REWARD_ACCOUNT, FORK_SCRIPT_REF, FORK_VALIDATOR_ADDRESS, LOCK_STATE_ASSET_ID, LockDatum, MINT_SCRIPT_REF, TUNA_V1_ASSET_ID, TUNA_V2_ASSET_ID, TUNA_V2_MINT_REDEEMER, ConvertResponse, TunaBalance } from "./types";
 import { CborHex, Transaction, Value } from "@saibdev/bifrost";
 
-export async function buildConvertTunaTx(addressHex: string, amount: bigint) {
+const provider = new Blockfrost(
+    {
+        network: "cardano-mainnet",
+        projectId: "mainnetuRUrQ38l0TbUCUbjDDRNfi8ng1qxCtpT",
+    }
+);
 
-    const provider = new Blockfrost(
-        {
-            network: "cardano-mainnet",
-            projectId: "mainnetuRUrQ38l0TbUCUbjDDRNfi8ng1qxCtpT",
-        }
-    )
+export async function buildConvertTunaTx(addressHex: string, amount: bigint) {
 
     const wallet = new ColdWallet(
         Core.Address.fromBytes(Core.HexBlob.fromBytes(Buffer.from(addressHex, 'hex'))),
@@ -86,26 +86,22 @@ export function getBalance(balanceCbor: CborHex<Value>) {
 }
 
 export async function waitForTransaction(addressHex: string, txId: string) {
-    const provider = new Blockfrost(
-        {
-            network: "cardano-mainnet",
-            projectId: "mainnetuRUrQ38l0TbUCUbjDDRNfi8ng1qxCtpT",
-        }
-    )
+
     const wallet = new ColdWallet(
         Core.Address.fromBytes(Core.HexBlob.fromBytes(Buffer.from(addressHex, 'hex'))),
         NetworkId.Mainnet,
         provider,
     );
+
     const transaction_id = TransactionId(txId);
     const blaze = await Blaze.from(provider, wallet);
+
     while (true) {
         try {
             delay(1000);
             await blaze.provider.resolveUnspentOutputs([new TransactionInput(transaction_id, 0n)]);
             break;
-        } catch (error) {
-        }
+        } catch (error) { }
     }
 }
 
