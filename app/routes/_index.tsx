@@ -315,14 +315,14 @@ export default function Index() {
         </div>
 
         <div className="flex-grow w-full flex flex-col items-center justify-center space-y-2">
-          <div
+          <button
             className="flex items-center justify-center w-[200px] p-2 bg-[#5A66F6] rounded-md cursor-pointer 
                hover:bg-[#4E5BE5] active:bg-[#3F4CCB] transition select-none"
             onClick={!isLoading ? handleConvert : undefined}
           >
             {isLoading ? (
               <>
-                <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-black mr-2"></div>
+                <span className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-black mr-2"></span>
                 <span className="text-black font-medium">Converting...</span>
               </>
             ) : (
@@ -331,7 +331,7 @@ export default function Index() {
                 <span className="text-black font-medium">CONVERT</span>
               </>
             )}
-          </div>
+          </button>
           <div className="w-full flex justify-center h-[20px]">
             <span className="text-sm text-[#ff5861]">{statusMessage}</span>
           </div>

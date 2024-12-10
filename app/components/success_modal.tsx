@@ -10,7 +10,6 @@ const SuccesModal = ({ onClose, isLoading, txId }: SuccesModalProps) => {
     return (
         <div
             className="fixed inset-0 backdrop-blur-sm bg-black/30 z-10 flex items-center justify-center"
-            onClick={!isLoading ? onClose : undefined}
         >
             <div
                 className="flex flex-col items-center w-[500px] bg-[#15191e] rounded-lg p-8 text-white"
@@ -40,7 +39,9 @@ const SuccesModal = ({ onClose, isLoading, txId }: SuccesModalProps) => {
 
                 <h2 className="text-white font-bold text-2xl mb-3">{isLoading ? "Hang Tight" : "Success!"}</h2>
                 <p className="text-[#D1D5DB] text-md mb-1">
-                    {isLoading ? "We're finalizing your transaction. Just a moment..." : "Your transaction has been processed successfully!"}
+                    {isLoading
+                        ? "We're waiting for confirmation on your transaction. Hang tight..."
+                        : "Your transaction has been successfully confirmed!"}
                 </p>
                 <a
                     href={`https://cardanoscan.io/transaction/${txId}`}
@@ -54,7 +55,7 @@ const SuccesModal = ({ onClose, isLoading, txId }: SuccesModalProps) => {
                     <div className="flex items-center justify-center pt-3 w-[150px]">
                         <button
                             onClick={onClose}
-                            className=" w-full px-4 py-2 bg-[#00cdb8] text-white font-semibold rounded-md hover:bg-[#00b2a1] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#00cdb8]"
+                            className="flex items-center justify-center w-[200px] p-2 bg-[#5A66F6] rounded-md cursor-pointer hover:bg-[#4E5BE5] active:bg-[#3F4CCB] transition select-none"
                         >
                             Close
                         </button>
